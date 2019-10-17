@@ -1,0 +1,173 @@
+---
+title: "流程图(flow chart in R)"
+author: "石威展"
+date: "2019/10/17"
+output: html_document
+---
+**第一步：**自定义绘制基本矩形和文本的函数。利用该函数可以快速的根据字段的长度和宽度绘制相应的矩形框，该矩形框为流程图的基本图元。
+
+```{r}
+tableBox <- function(labels, x=0.5, y=0.5) {
+ 
+    nlabel <- length(labels)#确定标签个数
+ 
+    taplevp <- viewport(x=x, y=y, width=max(stringWidth(labels))+ unit(4, "mm"),
+ 
+                        height=unit(nlabel, "lines"))#根据标签的多少绘制矩形框
+ 
+    pushViewport(taplevp)
+ 
+    grid.roundrect()
+ 
+    if (nlabel > 1) {
+ 
+        for (i in 1:(nlabel-1)) {
+ 
+            fill <- c("white", "grey")[i%%2+1]
+ 
+            grid.clip(y=unit(i, "lines"), just="bottom")
+ 
+            grid.roundrect(gp=gpar(fill=fill))
+ 
+        }
+ 
+    }
+ 
+    grid.clip()#绘制灰色阴影
+ 
+    grid.text(labels, x=unit(2, "mm"), y=unit(nlabel:1-0.5, 'lines'),just='left')#添加文本
+ 
+    popViewport()
+ 
+}
+```
+
+
+**第二步：**确定矩形框在绘图窗口的位置，并以该位置为连接线的起点和终点，绘制带箭头的连接线。
+```{r}
+
+boxGrob <- function(labels, x=0.5, y=0.5) {
+ 
+    grob(labels=labels, x=x, y=y, cl="box")
+ 
+}#存储矩形框的基本信息
+ 
+ 
+drawDetails.box <- function(x, ...) {
+ 
+    tableBox(x$labels, x$x, x$y)
+ 
+}#确定矩形框的基本位置
+ 
+ 
+xDetalis.box <- function(x, theta) {
+ 
+    nlines <- length(x$labels)
+ 
+    height <- unit(nlines, 'lines')
+ 
+    width <- unit(4, "mm")+max(stringWidth(x$labels)) 
+ 
+    grobX(roundrectGrob(x=x$x, y=x$y, width=width, height=height), theta)
+ 
+}#确定矩形框在X轴的位置（东西方向）
+ 
+ 
+yDetalis.box <- function(x, theta) {
+ 
+    nlines <- length(x$labels)
+ 
+    height <- unit(nlines, 'lines')
+ 
+    width <- unit(4, "mm")+max(stringWidth(x$labels)) 
+ 
+    grobY(rectGrob(x=x$x, y=x$y, width=width, height=height), theta)
+ 
+}#确定矩形框在Y轴的位置（南北方向）
+```
+
+
+**第三步：**以上述两个函数为基础绘制流程图
+```{r}
+library(grid)
+ 
+#确定矩形框的大小和矩形框里面的标签
+ 
+box1 <- boxGrob(c("book_author_table", "ID", "book", "author"),x=0.25)
+ 
+box2 <- boxGrob(c("book_table", "ISBN", "title", "pub"), x=0.6, y=0.75)
+ 
+box3 <- boxGrob(c("author_table", "ID", "name", "gender"), x=0.6, y=0.25)
+ 
+box4 <- boxGrob(c("publisher_table", "ID", "name","country"), x=0.85,y=0.75)
+ 
+box5 <- boxGrob(c("gender_table", "ID", "gender"), x=0.85,y=0.25)
+ 
+#绘制矩形框及标签
+ 
+grid.draw(box1)
+ 
+grid.draw(box2)
+ 
+grid.draw(box3)
+ 
+grid.draw(box4)
+ 
+grid.draw(box5)
+ 
+#绘制不同矩形框之间的连接线
+ 
+grid.curve(xDetalis.box(box1, "east"),
+ 
+    yDetalis.box(box1, "south")+ unit(1.5, "lines") ,
+ 
+    xDetalis.box(box2, "west"),
+ 
+    yDetalis.box(box2, "north")- unit(1.5, "lines") ,
+ 
+    inflect=TRUE,
+ 
+    arrow=arrow(type="closed",angle=15,length=unit(2, "mm")),gp=gpar(fill="black"))
+ 
+ 
+grid.curve(xDetalis.box(box1, "east"),
+ 
+    yDetalis.box(box1, "north") - unit(3.5, "lines"),
+ 
+    xDetalis.box(box3, "west"),
+ 
+    yDetalis.box(box3, "south") + unit(2.5, "lines"),
+ 
+    inflect=T, square=T,curvature=-1,
+ 
+    arrow=arrow(type="closed", angle=15, length=unit(2, "mm")), gp=gpar(fill="black"))
+ 
+ 
+grid.curve(xDetalis.box(box2, "east"),
+ 
+    yDetalis.box(box2, "south") + unit(0.5, "lines"),
+ 
+    xDetalis.box(box4, "west"),
+ 
+    yDetalis.box(box4, "north") - unit(1.5, "lines"),
+ 
+    inflect=TRUE,
+ 
+    arrow=arrow(type="closed", angle=15, length=unit(2, "mm")), gp=gpar(fill="black"))
+ 
+ 
+grid.curve(xDetalis.box(box3, "east"),
+ 
+    yDetalis.box(box3, "south") + unit(0.5, "lines"),
+ 
+    xDetalis.box(box5, "west"),
+ 
+    yDetalis.box(box5, "north")- unit(1.5, "lines"),
+ 
+    inflect=TRUE,
+ 
+    arrow=arrow(type="closed", angle=15, length=unit(2, "mm")), gp=gpar(fill="black"))
+```
+
+
+
